@@ -24,11 +24,13 @@ $(DSRC).c.obj:
 $(LIBS):
 	
 GenerateLibFile:
+!IF !EXISTS(.\src\ntdll.lib)
 	@copy C:\Windows\SysWOW64\ntdll.dll .\src
 	@.\utils\gendef.exe .\src\ntdll.dll
 	@move .\ntdll.def .\src
 	@dlltool.exe -k -d .\src\ntdll.def -l .\src\ntdll.lib
 	@del .\src\ntdll.dll
+!ENDIF
 
 run:
 	@mkdir bin
@@ -37,5 +39,3 @@ run:
 clean:
 	rmdir /s /q .\lib
 	rmdir /s /q .\bin
-	del .\src\ntdll.def
-	del .\src\ntdll.lib
