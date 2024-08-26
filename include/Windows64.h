@@ -1,6 +1,7 @@
 #ifndef _WINDOWS64_
 #define _WINDOWS64_
 
+#include <ntdef.h>
 #include <minwindef.h>
 
 #define WOW64API        __stdcall
@@ -14,6 +15,8 @@ typedef PTR64 HANDLE64;
 typedef PTR64 HMODULE64;
 typedef PTR64 FARPROC64;
 
+DECLARE_IMPORT PTR64 WOW64API X64Call(PTR64 lpProcAddress, DWORD NumberOfParameter, ...);
+DECLARE_IMPORT NTSTATUS WOW64API NtX64Call(PTR64 lpProcAddress, DWORD NumberOfParameter, ...);
 DECLARE_IMPORT PTR64 WOW64API VirtualAllocEx64(HANDLE hProcess, PTR64 lpAddress, SIZE_T64 dwSize, DWORD flAllocationType, DWORD flProtect);
 DECLARE_IMPORT PTR64 WOW64API VirtualAlloc64(PTR64 lpAddress, SIZE_T64 dwSize, DWORD flAllocationType, DWORD flProtect);
 DECLARE_IMPORT BOOL WOW64API VirtualProtectEx64(HANDLE hProcess, PTR64 lpAddress, SIZE_T64 dwSize, DWORD flNewProtect, PDWORD lpflOldProtect);
