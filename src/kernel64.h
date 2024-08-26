@@ -171,7 +171,6 @@ typedef struct _PEB64
 } PEB64, *PPEB64;
 #pragma pack(pop)
 
-NTSYSCALLAPI NTSTATUS NTAPI NtWow64AllocateVirtualMemory64(HANDLE ProcessHandle, PTR64 *BaseAddress, ULONG64 ZeroBits, PULONG64 RegionSize, ULONG AllocationType, ULONG Protect);
 NTSYSCALLAPI NTSTATUS NTAPI NtWow64ReadVirtualMemory64(HANDLE ProcessHandle, PTR64 BaseAddress, PVOID Buffer, SIZE_T64 BufferSize, PSIZE_T64 NumberOfBytesRead);
 NTSYSCALLAPI NTSTATUS NTAPI NtWow64WriteVirtualMemory64(HANDLE ProcessHandle, PTR64 BaseAddress, PVOID Buffer, SIZE_T64 BufferSize, PSIZE_T64 NumberOfBytesWritten);
 
