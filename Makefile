@@ -14,7 +14,7 @@ all: run $(TARGET)
 
 $(TARGET): $(OBJS) $(LIBS) GenerateLibFile
 	@cd bin
-	$(LD) $(LDFLAGS) kernel64.obj msvcrt.lib ..\src\ntdll.lib
+	$(LD) $(LDFLAGS) kernel64.obj ..\src\msvcrt.lib ..\src\ntdll.lib
 	@cd ..
 	@move bin\KERNEL64.lib .\lib
 
