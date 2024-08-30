@@ -648,14 +648,19 @@ DECLARE_EXPORT HMODULE64 WOW64API LoadLibraryA64(LPCSTR lpLibFileName)
 
 BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved)
 {
-    if (dwReason == DLL_PROCESS_ATTACH)
+    switch (dwReason)
     {
+    case DLL_PROCESS_ATTACH:
         DisableThreadLibraryCalls(hInstance);
         hSelf = OpenProcess(PROCESS_ALL_ACCESS, FALSE, GetCurrentProcessId());
         Ntdll64 = GetModuleHandleA64("ntdll.dll");
 
         if (hSelf == NULL)
             return FALSE;
+        break;
+    case DLL_PROCESS_DETACH:
+        CloseHandle(hSelf);
+        break;
     }
 
     return TRUE;
