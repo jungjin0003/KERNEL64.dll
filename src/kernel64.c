@@ -18,11 +18,11 @@ HMODULE64 Ntdll64;
 #define R13 5
 #define R14 6
 #define R15 7
+#define EMIT(x) __asm __emit x
 /* 
 Upgrade addressing mode 32bit to 64bit
 Like EAX to RAX
 */
-#define EMIT(x) __asm __emit x
 #define REX_W   EMIT(0x48) __asm
 #define PUSH(r) EMIT(0x41) EMIT(0x50 + r)
 #define POP(r)  EMIT(0x41) EMIT(0x58 + r)
