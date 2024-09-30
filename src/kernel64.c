@@ -467,7 +467,7 @@ DECLARE_EXPORT BOOL WOW64API ReadProcessMemory64(HANDLE hProcess, PTR64 lpBaseAd
     NTSTATUS ntstatus;
     SIZE_T64 NumberOfBytesRead;
 
-    ntstatus = NtWow64ReadVirtualMemory64(hProcess, lpBaseAddress, lpBuffer, nSize, &NumberOfBytesRead);
+    ntstatus = NtWow64ReadVirtualMemory64(hProcess == (HANDLE)-1 ? hSelf : hProcess, lpBaseAddress, lpBuffer, nSize, &NumberOfBytesRead);
 
     if (lpNumberOfBytesRead)
         *lpNumberOfBytesRead = NumberOfBytesRead;
@@ -482,7 +482,7 @@ DECLARE_EXPORT BOOL WOW64API WriteProcessMemory64(HANDLE hProcess, PTR64 lpBaseA
     NTSTATUS ntstatus;
     SIZE_T64 NumberOfBytesWritten;
 
-    ntstatus = NtWow64WriteVirtualMemory64(hProcess, lpBaseAddress, lpBuffer, nSize, &NumberOfBytesWritten);
+    ntstatus = NtWow64WriteVirtualMemory64(hProcess == (HANDLE)-1 ? hSelf : hProcess, lpBaseAddress, lpBuffer, nSize, &NumberOfBytesWritten);
 
     if (lpNumberOfBytesWritten)
         *lpNumberOfBytesWritten = NumberOfBytesWritten;
