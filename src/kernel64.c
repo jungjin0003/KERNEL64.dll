@@ -646,6 +646,18 @@ DECLARE_EXPORT HMODULE64 WOW64API LoadLibraryA64(LPCSTR lpLibFileName)
     return hModule64;
 }
 
+DECLARE_EXPORT BOOL WOW64API FreeLibrary64(HMODULE64 hLibModule)
+{
+    static FARPROC64 LdrUnloadDll;
+    if (LdrUnloadDll == NULL64)
+        LdrUnloadDll = GetProcAddress64(Ntdll64, "LdrUnloadDll");
+
+    NTSTATUS ntstatus;
+    ntstatus = NtX64Call(LdrUnloadDll, 1, hLibModule);
+
+    return NT_SUCCESS(ntstatus);
+}
+
 BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved)
 {
     switch (dwReason)

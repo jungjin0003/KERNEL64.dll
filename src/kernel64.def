@@ -17,4 +17,5 @@ GetModuleHandleA64=GetModuleHandleA64
 GetModuleHandleW64=GetModuleHandleW64
 LoadLibraryA64=LoadLibraryA64
 LoadLibraryW64=LoadLibraryW64
+FreeLibrary64=FreeLibrary64
 GetProcAddress64=GetProcAddress64

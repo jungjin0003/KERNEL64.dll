@@ -45,6 +45,7 @@ KERNEL64 has an API that extends memory-related features available in the WoW64 
 |       GetModuleHandleW | GetModuleHandleW64           | [LINK](https://learn.microsoft.com/windows/win32/api/libloaderapi/nf-libloaderapi-getmodulehandlew) |
 |           LoadLibraryA | LoadLibraryA64               | [LINK](https://learn.microsoft.com/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibrarya) |
 |           LoadLibraryW | LoadLibraryW64               | [LINK](https://learn.microsoft.com/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibraryw) |
+|            FreeLibrary | FreeLibrary64                | [LINK](https://learn.microsoft.com/windows/win32/api/libloaderapi/nf-libloaderapi-freelibrary) |
 |         GetProcAddress | GetProcAddress64             | [LINK](https://learn.microsoft.com/windows/win32/api/libloaderapi/nf-libloaderapi-getprocaddress) |
 
 ## Download DLL
