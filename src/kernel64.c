@@ -622,7 +622,13 @@ DECLARE_EXPORT HMODULE64 WOW64API LoadLibraryW64(LPCWSTR lpLibFileName)
     UnicodeString.Length = wcslen(lpLibFileName) * sizeof(wchar_t);
     UnicodeString.MaximumLength = UnicodeString.Length + sizeof(wchar_t);
 
+    PVOID OldValue = NULL;
+    if (Wow64DisableWow64FsRedirection(&OldValue) == FALSE)
+        return hModule64;
+
     NTSTATUS ntstatus = NtX64Call(LdrLoadDll, 4, NULL64, NULL64, (PTR64)&UnicodeString, (PTR64)&hModule64);
+
+    Wow64RevertWow64FsRedirection(OldValue);
 
     kernelbase_BaseSetLastNTError(ntstatus);
 
