@@ -374,6 +374,9 @@ typedef struct _PEB64
 } PEB64, *PPEB64;
 #pragma pack(pop)
 
+NTSYSCALLAPI NTSTATUS NTAPI NtDuplicateObject(HANDLE SourceProccessHandle, HANDLE SourceHandle, HANDLE TargetProcessHandle, PHANDLE TargetHandle, ACCESS_MASK DesiredAccess, ULONG HandleAttributes, ULONG Options);
+NTSYSCALLAPI NTSTATUS NTAPI NtTerminateThread(HANDLE ThreadHandle, NTSTATUS ExitStatus);
+
 DECLARE_EXPORT PTR64 WOW64API X64Call(PTR64 lpProcAddress, DWORD NumberOfParameter, ...);
 DECLARE_EXPORT NTSTATUS WOW64API NtX64Call(PTR64 lpProcAddress, DWORD NumberOfParameter, ...);
 DECLARE_EXPORT PTR64 WOW64API VirtualAllocEx64(HANDLE hProcess, PTR64 lpAddress, SIZE_T64 dwSize, DWORD flAllocationType, DWORD flProtect);
