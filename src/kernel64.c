@@ -520,10 +520,14 @@ DECLARE_EXPORT SIZE_T64 WOW64API VirtualQuery64(PTR64 lpAddress, PMEMORY_BASIC_I
 
 DECLARE_EXPORT BOOL WOW64API ReadProcessMemory64(HANDLE hProcess, PTR64 lpBaseAddress, LPVOID lpBuffer, SIZE_T64 nSize, SIZE_T64 *lpNumberOfBytesRead)
 {
+    static FARPROC64 NtReadVirtualMemory;
+    if (NtReadVirtualMemory == NULL64)
+        NtReadVirtualMemory = GetProcAddress64(Ntdll64, "NtReadVirtualMemory");
+
     NTSTATUS ntstatus;
     SIZE_T64 NumberOfBytesRead;
 
-    ntstatus = NtWow64ReadVirtualMemory64(hProcess == (HANDLE)-1 ? hSelf : hProcess, lpBaseAddress, lpBuffer, nSize, &NumberOfBytesRead);
+    ntstatus = NtX64Call(NtReadVirtualMemory, 5, hProcess == (HANDLE)-1 ? (HANDLE64)hSelf : (HANDLE64)hProcess, lpBaseAddress, (PTR64)lpBuffer, nSize, (PTR64)&NumberOfBytesRead);
 
     if (lpNumberOfBytesRead)
         *lpNumberOfBytesRead = NumberOfBytesRead;
@@ -535,10 +539,14 @@ DECLARE_EXPORT BOOL WOW64API ReadProcessMemory64(HANDLE hProcess, PTR64 lpBaseAd
 
 DECLARE_EXPORT BOOL WOW64API WriteProcessMemory64(HANDLE hProcess, PTR64 lpBaseAddress, LPVOID lpBuffer, SIZE_T64 nSize, SIZE_T64 *lpNumberOfBytesWritten)
 {
+    static FARPROC64 NtWriteVirtualMemory;
+    if (NtWriteVirtualMemory == NULL64)
+        NtWriteVirtualMemory = GetProcAddress64(Ntdll64, "NtWriteVirtualMemory");
+
     NTSTATUS ntstatus;
     SIZE_T64 NumberOfBytesWritten;
 
-    ntstatus = NtWow64WriteVirtualMemory64(hProcess == (HANDLE)-1 ? hSelf : hProcess, lpBaseAddress, lpBuffer, nSize, &NumberOfBytesWritten);
+    ntstatus = NtX64Call(NtWriteVirtualMemory, 5, hProcess == (HANDLE)-1 ? (HANDLE64)hSelf : (HANDLE64)hProcess, lpBaseAddress, (PTR64)lpBuffer, nSize, (PTR64)&NumberOfBytesWritten);
 
     if (lpNumberOfBytesWritten)
         *lpNumberOfBytesWritten = NumberOfBytesWritten;

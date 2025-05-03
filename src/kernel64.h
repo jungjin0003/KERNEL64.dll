@@ -171,9 +171,6 @@ typedef struct _PEB64
 } PEB64, *PPEB64;
 #pragma pack(pop)
 
-NTSYSCALLAPI NTSTATUS NTAPI NtWow64ReadVirtualMemory64(HANDLE ProcessHandle, PTR64 BaseAddress, PVOID Buffer, SIZE_T64 BufferSize, PSIZE_T64 NumberOfBytesRead);
-NTSYSCALLAPI NTSTATUS NTAPI NtWow64WriteVirtualMemory64(HANDLE ProcessHandle, PTR64 BaseAddress, PVOID Buffer, SIZE_T64 BufferSize, PSIZE_T64 NumberOfBytesWritten);
-
 DECLARE_EXPORT PTR64 WOW64API X64Call(PTR64 lpProcAddress, DWORD NumberOfParameter, ...);
 DECLARE_EXPORT NTSTATUS WOW64API NtX64Call(PTR64 lpProcAddress, DWORD NumberOfParameter, ...);
 DECLARE_EXPORT PTR64 WOW64API VirtualAllocEx64(HANDLE hProcess, PTR64 lpAddress, SIZE_T64 dwSize, DWORD flAllocationType, DWORD flProtect);
