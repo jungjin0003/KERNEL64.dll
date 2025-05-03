@@ -139,6 +139,62 @@ unsigned long long __read64qword(unsigned long long address)
     return ret.Data;
 }
 
+void __write64byte(unsigned long long address, unsigned char data)
+{
+    SwitchX64();
+
+    __asm 
+    {
+        REX_W mov eax, dword ptr [ebp+0x08]
+        mov cl, data
+        mov byte ptr [eax], cl
+    }
+
+    SwitchX86();
+}
+
+void __write64word(unsigned long long address, unsigned short data)
+{
+    SwitchX64();
+
+    __asm 
+    {
+        REX_W mov eax, dword ptr [ebp+0x08]
+        mov cx, data
+        mov word ptr [eax], cx
+    }
+
+    SwitchX86();
+}
+
+void __write64dword(unsigned long long address, unsigned long data)
+{
+    SwitchX64();
+
+    __asm 
+    {
+        REX_W mov eax, dword ptr [ebp+0x08]
+        mov ecx, data
+        mov dword ptr [eax], ecx
+    }
+
+    SwitchX86();
+}
+
+void __write64qword(unsigned long long address, unsigned long long data)
+{
+    SwitchX64();
+
+    __asm 
+    {
+        REX_W mov eax, dword ptr [ebp+0x08]
+        REX_W mov ecx, dword ptr [ebp+0x10]
+        REX_W mov dword ptr [eax], ecx
+    }
+
+    SwitchX86();
+}
+
 DECLARE_EXPORT DECLARE_NAKED PTR64 WOW64API X64Call(PTR64 lpProcAddress, DWORD NumberOfParameter, ...)
 {
     __asm 
