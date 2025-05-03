@@ -33,9 +33,9 @@ GenerateLibFile:
 !ENDIF
 
 run:
-	@mkdir bin
-	@mkdir lib
+	-@mkdir bin
+	-@mkdir lib
 
 clean:
-	rmdir /s /q .\lib
-	rmdir /s /q .\bin
+	-@rmdir /s /q .\lib
+	-@rmdir /s /q .\bin
