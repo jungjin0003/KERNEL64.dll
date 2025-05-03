@@ -550,12 +550,84 @@ DECLARE_EXPORT BOOL WOW64API WriteProcessMemory64(HANDLE hProcess, PTR64 lpBaseA
 
 BOOL WOW64API ReadMemory64(PTR64 lpBaseAddress, LPVOID lpBuffer, SIZE_T64 nSize, SIZE_T64 *lpNumberOfBytesRead)
 {
-    return ReadProcessMemory64(hSelf, lpBaseAddress, lpBuffer, nSize, lpNumberOfBytesRead);
+    BOOL bResult = TRUE;
+    SIZE_T64 NumberOfBytesRead = 0;
+
+    __try
+    {
+        for (int i = 0; i < nSize / 8; i++, NumberOfBytesRead += 8)
+            *(DWORD64 *)((ULONG_PTR)lpBuffer + i * 8) = __read64qword(lpBaseAddress + i * 8);
+        
+        while (NumberOfBytesRead < nSize)
+        {
+            BYTE RemainLength = nSize - NumberOfBytesRead;
+            if (RemainLength >= 4)
+            {
+                *(DWORD *)((ULONG_PTR)lpBuffer + NumberOfBytesRead) = __read64dword(lpBaseAddress + NumberOfBytesRead);
+                NumberOfBytesRead += 4;
+            }
+            else if (RemainLength >= 2)
+            {
+                *(WORD *)((ULONG_PTR)lpBuffer + NumberOfBytesRead) = __read64word(lpBaseAddress + NumberOfBytesRead);
+                NumberOfBytesRead += 2;
+            }
+            else if (RemainLength >= 1)
+            {
+                *(BYTE *)((ULONG_PTR)lpBuffer + NumberOfBytesRead) = __read64byte(lpBaseAddress + NumberOfBytesRead);
+                NumberOfBytesRead += 1;
+            }
+        }
+    }
+    __except(EXCEPTION_EXECUTE_HANDLER)
+    {
+        bResult = FALSE;
+    }
+
+    if (lpNumberOfBytesRead)
+        *lpNumberOfBytesRead = NumberOfBytesRead;
+
+    return bResult;
 }
 
 BOOL WOW64API WriteMemory64(PTR64 lpBaseAddress, LPVOID lpBuffer, SIZE_T64 nSize, SIZE_T64 *lpNumberOfBytesWritten)
 {
-    return WriteProcessMemory64(hSelf, lpBaseAddress, lpBuffer, nSize, lpNumberOfBytesWritten);
+    BOOL bResult = TRUE;
+    SIZE_T64 NumberOfBytesWritten = 0;
+
+    __try
+    {
+        for (int i = 0; i < nSize / 8; i++, NumberOfBytesWritten += 8)
+            __write64qword(lpBaseAddress + i * 8, *(DWORD64 *)((ULONG_PTR)lpBuffer + i * 8));
+
+        while (NumberOfBytesWritten < nSize)
+        {
+            BYTE RemainLength = nSize - NumberOfBytesWritten;
+            if (RemainLength >= 4)
+            {
+                __write64dword(lpBaseAddress + NumberOfBytesWritten, *(DWORD *)((ULONG_PTR)lpBuffer + NumberOfBytesWritten));
+                NumberOfBytesWritten += 4;
+            }
+            else if (RemainLength >= 2)
+            {
+                __write64word(lpBaseAddress + NumberOfBytesWritten, *(WORD *)((ULONG_PTR)lpBuffer + NumberOfBytesWritten));
+                NumberOfBytesWritten += 2;
+            }
+            else if (RemainLength >= 1)
+            {
+                __write64byte(lpBaseAddress + NumberOfBytesWritten, *(BYTE *)((ULONG_PTR)lpBuffer + NumberOfBytesWritten));
+                NumberOfBytesWritten += 1;
+            }
+        }
+    }
+    __except(EXCEPTION_EXECUTE_HANDLER)
+    {
+        bResult = FALSE;
+    }
+
+    if (lpNumberOfBytesWritten)
+        *lpNumberOfBytesWritten = NumberOfBytesWritten;
+
+    return bResult;
 }
 
 DECLARE_EXPORT HMODULE64 WOW64API GetModuleHandleW64(LPCWSTR lpModuleName)
