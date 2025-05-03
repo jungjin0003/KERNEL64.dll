@@ -19,3 +19,6 @@ LoadLibraryA64=LoadLibraryA64
 LoadLibraryW64=LoadLibraryW64
 FreeLibrary64=FreeLibrary64
 GetProcAddress64=GetProcAddress64
+CreateThread64=CreateThread64
+CreateRemoteThread64=CreateRemoteThread64
+CreateRemoteThreadEx64=CreateRemoteThreadEx64
