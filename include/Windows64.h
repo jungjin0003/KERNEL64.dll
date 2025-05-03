@@ -1,8 +1,8 @@
 #ifndef _WINDOWS64_
 #define _WINDOWS64_
 
-#include <ntdef.h>
 #include <minwindef.h>
+#include <minwinbase.h>
 
 #define WOW64API        __stdcall
 #define DECLARE_IMPORT  __declspec(dllimport)
@@ -14,6 +14,12 @@ typedef ULONG64 SIZE_T64, *PSIZE_T64;
 typedef PTR64 HANDLE64;
 typedef PTR64 HMODULE64;
 typedef PTR64 FARPROC64;
+
+/*
+    typedef DWORD64 (WINAPI *PTHREAD_START_ROUTINE64)(PTR64 lpParameter)
+*/
+typedef PTR64 PTHREAD_START_ROUTINE64;
+typedef PTHREAD_START_ROUTINE64 LPTHREAD_START_ROUTINE64;
 
 DECLARE_IMPORT PTR64 WOW64API X64Call(PTR64 lpProcAddress, DWORD NumberOfParameter, ...);
 DECLARE_IMPORT NTSTATUS WOW64API NtX64Call(PTR64 lpProcAddress, DWORD NumberOfParameter, ...);
@@ -31,5 +37,8 @@ DECLARE_IMPORT HMODULE64 WOW64API LoadLibraryW64(LPCWSTR lpLibFileName);
 DECLARE_IMPORT HMODULE64 WOW64API LoadLibraryA64(LPCSTR lpLibFileName);
 DECLARE_IMPORT BOOL WOW64API FreeLibrary64(HMODULE64 hLibModule);
 DECLARE_IMPORT FARPROC64 WOW64API GetProcAddress64(HMODULE64 hModule64, LPCSTR lpProcName);
+DECLARE_IMPORT HANDLE CreateRemoteThreadEx64(HANDLE hProcess, LPSECURITY_ATTRIBUTES lpThreadAttributes, SIZE_T dwStackSize, LPTHREAD_START_ROUTINE64 lpStartAddress, PTR64 lpParameter, DWORD dwCreationFlags, LPPROC_THREAD_ATTRIBUTE_LIST lpAttributeList, LPDWORD lpThreadId);
+DECLARE_IMPORT HANDLE CreateRemoteThread64(HANDLE hProcess, LPSECURITY_ATTRIBUTES lpThreadAttributes, SIZE_T64 dwStackSize, LPTHREAD_START_ROUTINE64 lpStartAddress, PTR64 lpParameter, DWORD dwCreationFlags, LPDWORD lpThreadId);
+DECLARE_IMPORT HANDLE CreateThread64(LPSECURITY_ATTRIBUTES lpThreadAttributes, SIZE_T64 dwStackSize, LPTHREAD_START_ROUTINE64 lpStartAddress, PTR64 lpParameter, DWORD dwCreationFlags, LPDWORD lpThreadId);
 
 #endif

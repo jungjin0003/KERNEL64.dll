@@ -47,6 +47,9 @@ KERNEL64 has an API that extends memory-related features available in the WoW64 
 |           LoadLibraryW | LoadLibraryW64               | [LINK](https://learn.microsoft.com/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibraryw) |
 |            FreeLibrary | FreeLibrary64                | [LINK](https://learn.microsoft.com/windows/win32/api/libloaderapi/nf-libloaderapi-freelibrary) |
 |         GetProcAddress | GetProcAddress64             | [LINK](https://learn.microsoft.com/windows/win32/api/libloaderapi/nf-libloaderapi-getprocaddress) |
+|           CreateThread | CreateThread64               | [LINK](https://learn.microsoft.com/ko-kr/windows/win32/api/processthreadsapi/nf-processthreadsapi-createthread) |
+|     CreateRemoteThread | CreateRemoteThread64         | [LINK](https://learn.microsoft.com/ko-kr/windows/win32/api/processthreadsapi/nf-processthreadsapi-createremotethread) |
+|   CreateRemoteThreadEx | CreateRemoteThreadEx64       | [LINK](https://learn.microsoft.com/ko-kr/windows/win32/api/processthreadsapi/nf-processthreadsapi-createremotethreadex) |
 
 ## Download DLL
 [Click Here](https://github.com/jungjin0003/KERNEL64.dll/releases/latest)

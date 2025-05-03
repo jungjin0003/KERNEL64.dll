@@ -4,6 +4,13 @@
 
 #define ntdll_RtlSetLastWin32Error(ntstatus)
 #define kernelbase_BaseSetLastNTError(ntstatus)
+#define kernelbase_byte_101C55A4 FALSE
+#define ProcessImageInformation 0x25
+#define ProcessProtectionInformation 0x3D
+#define TEB_ClientId_OFFSET32 0x20
+#define TEB_ActivationContextStackPointer_OFFSET64 0x2C8
+#define TEB_SubProcessTag_OFFSET32 0xF60
+#define TEB_SubProcessTag_OFFSET64 0x1720
 #define MemoryBasicInformation 0
 
 HANDLE hSelf;
@@ -245,6 +252,55 @@ DECLARE_EXPORT DECLARE_NAKED NTSTATUS WOW64API NtX64Call(PTR64 lpProcAddress, DW
 {
     __asm { jmp X64Call }
 }
+
+DECLARE_NAKED VOID WOW64API BaseThreadInitThunk(LPVOID lpParameter)
+{
+    /*
+    NTSTATUS v3; // eax
+    __int64 result; // rax
+
+    if ( !a1 )
+    {
+        v3 = a2(a3);
+        RtlExitUserThread(v3);
+        __debugbreak();
+    }
+    if ( (RtlGetSuiteMask() & 0x10) == 0 || (result = BasepInitializeTermsrvFpns(), (int)result >= 0) )
+        result = 0i64;
+    return result;
+    */
+    __asm
+    {
+        push 0x27F
+        push [Ntdll64+0x04]
+        push [Ntdll64]
+        call GetProcAddress64
+        mov ecx, dword ptr [ebp+0x08]
+        mov ebp, 0x00000000
+        mov esp, dword ptr fs:[0x04]
+        push edx
+        push eax
+        mov eax, ecx
+        sub esp, 0x10
+        mov esi, eax
+        mov edi, esp
+        mov ecx, 0x04
+        rep movsd
+        push eax
+        call free
+        add esp, 0x04
+        SwitchX64();
+        REX_W pop eax
+        REX_W mov ecx, dword ptr [esp]
+        call eax
+        REX_W mov edx, eax
+        REX_W mov ecx, 0xFFFFFFFE EMIT(0xFF) EMIT(0xFF) EMIT(0xFF) EMIT(0xFF)
+        REX_W mov eax, dword ptr [esp+0x08]
+        REX_W sub esp, 0x10
+        call eax
+    }
+    __debugbreak();
+}
 #elif __GNUC__
 #define EMIT(x) ".byte " #x "\n\t"
 #define REX_W ".byte 0x48\n\t"
@@ -433,6 +489,76 @@ DECLARE_EXPORT DECLARE_NAKED NTSTATUS WOW64API NtX64Call(PTR64 lpProcAddress, DW
     );
 }
 #endif
+
+NTSTATUS WINAPI BasepConvertWin32AttributeList(LPPROC_THREAD_ATTRIBUTE_LIST lpAttributeList, char a2, DWORD *a3, int a4, DWORD *a5, BYTE *a6, DWORD *a7, int a8, int a9, DWORD *a10, DWORD *a11, DWORD *a12, DWORD *a13, int a14, int a15, DWORD *a16, PPS_ATTRIBUTE64 AttributeList, int *NumberOfPsAttribute)
+{
+    ULONG ProcessedAttributes = 0;
+
+    if (lpAttributeList->LastAttribute > lpAttributeList->AttributeCount)
+        return STATUS_INVALID_PARAMETER;
+
+    for (int i = 0; i < lpAttributeList->LastAttribute; i++)
+    {
+        PPROC_THREAD_ATTRIBUTE Attribute = &lpAttributeList->Attributes[i];
+        ULONG AttributeMask = 1 << Attribute->Attribute;
+        ULONG AttributeSize = 0;
+
+        if ((AttributeMask & lpAttributeList->PresentFlags) == 0 || (ProcessedAttributes & AttributeMask) != 0 || (a2 && (Attribute->Attribute & 0x10000) == 0))
+            return STATUS_INVALID_PARAMETER;
+
+        BOOLEAN ProcessFlag = TRUE;
+        switch (Attribute->Attribute)
+        {
+        case 0x20004:
+            if (Attribute->Size != 2)
+                return STATUS_INVALID_PARAMETER;
+            AttributeSize = 131085;
+            break;
+        
+        case 0x2000B:
+            if (Attribute->Size != 4 && Attribute->Value > 8 && Attribute->Value != -1)
+                return STATUS_INVALID_PARAMETER;
+
+            NTSTATUS ntstatus;
+            BYTE ProcessInformation = 0;
+            switch (Attribute->Value)
+            {
+            case 0: ProcessInformation = 97; break;
+            case 1: ProcessInformation = 82; break;
+            case 2: ProcessInformation = 81; break;
+            case 3: ProcessInformation = 49; break;
+            case 4: ProcessInformation = 65; break;
+            case 5: ProcessInformation = 98; break;
+            case 6: ProcessInformation = 33; break;
+            case 7: ProcessInformation = 18; break;
+            case 8: ProcessInformation = -127; break;
+            default:
+                ntstatus = NtQueryInformationProcess((HANDLE)-1, ProcessProtectionInformation, &ProcessInformation, 1, NULL);
+                if (!NT_SUCCESS(ntstatus))
+                    return ntstatus;
+            }
+
+            AttributeList[*NumberOfPsAttribute + 1].Attribute = 0;
+            AttributeList[*NumberOfPsAttribute].Size = 393233;
+            AttributeList[*NumberOfPsAttribute].Value = 1;
+            AttributeList[*NumberOfPsAttribute].ReturnLength = ProcessInformation;
+            break;
+
+        default:
+            return STATUS_INVALID_PARAMETER;
+        }
+
+        if (ProcessFlag)
+        {
+            AttributeList[*NumberOfPsAttribute + 1].Attribute = 0;
+            AttributeList[*NumberOfPsAttribute].Size = AttributeSize;
+            AttributeList[*NumberOfPsAttribute].Value = Attribute->Size;
+            AttributeList[*NumberOfPsAttribute++].ReturnLength = Attribute->Value;
+        }
+    }
+
+    return STATUS_SUCCESS;
+}
 
 DECLARE_EXPORT PTR64 WOW64API VirtualAllocEx64(HANDLE hProcess, PTR64 lpAddress, SIZE_T64 dwSize, DWORD flAllocationType, DWORD flProtect)
 {
@@ -798,6 +924,202 @@ DECLARE_EXPORT BOOL WOW64API FreeLibrary64(HMODULE64 hLibModule)
     ntstatus = NtX64Call(LdrUnloadDll, 1, hLibModule);
 
     return NT_SUCCESS(ntstatus);
+}
+
+DECLARE_EXPORT HANDLE CreateRemoteThreadEx64(HANDLE hProcess, LPSECURITY_ATTRIBUTES lpThreadAttributes, SIZE_T dwStackSize, LPTHREAD_START_ROUTINE64 lpStartAddress, PTR64 lpParameter, DWORD dwCreationFlags, LPPROC_THREAD_ATTRIBUTE_LIST lpAttributeList, LPDWORD lpThreadId)
+{
+    static NTSTATUS (WINAPI *BaseFormatObjectAttributes)(POBJECT_ATTRIBUTES ObjectAttributes, LPSECURITY_ATTRIBUTES SecurityAttributes, PUNICODE_STRING UnicodeString, POBJECT_ATTRIBUTES *ObjectAttributesOut);
+    static FARPROC64 NtCreateThreadEx;
+    static FARPROC64 RtlAllocateActivationContextStack;
+    static FARPROC64 RtlActivateActivationContextEx;
+    static FARPROC64 RtlReleaseActivationContext;
+    static FARPROC64 RtlFreeActivationContextStack;
+    static FARPROC64 RtlQueryInformationActivationContext;
+    if (BaseFormatObjectAttributes == NULL)
+        BaseFormatObjectAttributes = GetProcAddress(GetModuleHandleA("kernelbase.dll"), "BaseFormatObjectAttributes");
+
+    if (NtCreateThreadEx == NULL64)
+        NtCreateThreadEx = GetProcAddress64(Ntdll64, "NtCreateThreadEx");
+
+    if (RtlAllocateActivationContextStack == NULL64)
+        RtlAllocateActivationContextStack = GetProcAddress64(Ntdll64, "RtlAllocateActivationContextStack");
+
+    if (RtlActivateActivationContextEx == NULL64)
+        RtlActivateActivationContextEx = GetProcAddress64(Ntdll64, "RtlActivateActivationContextEx");
+
+    if (RtlReleaseActivationContext == NULL64)
+        RtlReleaseActivationContext = GetProcAddress64(Ntdll64, "RtlReleaseActivationContext");
+    
+    if (RtlFreeActivationContextStack == NULL64)
+        RtlFreeActivationContextStack = GetProcAddress64(Ntdll64, "RtlFreeActivationContextStack");
+
+    if (RtlQueryInformationActivationContext == NULL64)
+        RtlQueryInformationActivationContext = GetProcAddress64(Ntdll64, "RtlQueryInformationActivationContext");
+
+    NTSTATUS ntstatus = STATUS_SUCCESS;
+    HANDLE64 ThreadHandle = NULL64;
+    HANDLE Handle = NULL;
+
+    if ((dwCreationFlags & 0xFFFEFFFB) != 0)
+    {
+        ntstatus = STATUS_INVALID_PARAMETER;
+        kernelbase_BaseSetLastNTError(ntstatus);
+        return ThreadHandle;
+    }
+
+    OBJECT_ATTRIBUTES DummyObjectAttributes = { 0 };
+    POBJECT_ATTRIBUTES ObjectAttributes = NULL;
+    ntstatus = BaseFormatObjectAttributes(&DummyObjectAttributes, lpThreadAttributes, 0, &ObjectAttributes);
+
+    if (!NT_SUCCESS(ntstatus))
+    {
+        kernelbase_BaseSetLastNTError(ntstatus);
+        return ThreadHandle;
+    }
+
+    CLIENT_ID64 ClientId = { 0 };
+    PTR64 Teb = NULL64;
+    BYTE AttributeList[sizeof(PS_ATTRIBUTE64) * 40 + 8];
+
+    ((PPS_ATTRIBUTE_LIST64)AttributeList)->Attributes[0].Attribute = PS_ATTRIBUTE_CLIENT_ID;
+    ((PPS_ATTRIBUTE_LIST64)AttributeList)->Attributes[0].Size = sizeof(CLIENT_ID64);
+    ((PPS_ATTRIBUTE_LIST64)AttributeList)->Attributes[0].ValuePtr = &ClientId;
+    ((PPS_ATTRIBUTE_LIST64)AttributeList)->Attributes[0].ReturnLength = NULL64;
+    ((PPS_ATTRIBUTE_LIST64)AttributeList)->Attributes[1].Attribute = PS_ATTRIBUTE_TEB_ADDRESS;
+    ((PPS_ATTRIBUTE_LIST64)AttributeList)->Attributes[1].Size = sizeof(PTR64);
+    ((PPS_ATTRIBUTE_LIST64)AttributeList)->Attributes[1].ValuePtr = &Teb;
+    ((PPS_ATTRIBUTE_LIST64)AttributeList)->Attributes[1].ReturnLength = NULL64;
+
+    DWORD NumberOfPsAttribute = 2;
+
+    if (lpAttributeList)
+    {
+        ntstatus = BasepConvertWin32AttributeList(lpAttributeList, 1, NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, (PPS_ATTRIBUTE64)&AttributeList, &NumberOfPsAttribute);
+        if (!NT_SUCCESS(ntstatus))
+        {
+            kernelbase_BaseSetLastNTError(ntstatus);
+            return ThreadHandle;
+        }
+    }
+
+    ((PPS_ATTRIBUTE_LIST64)AttributeList)->TotalLength = sizeof(PS_ATTRIBUTE64) * NumberOfPsAttribute + 8;
+
+    BOOL IsCurrentProcess = TRUE;
+    if (hProcess != (HANDLE)-1)
+    {
+        if (NT_SUCCESS(NtDuplicateObject((HANDLE)-1, hProcess, (HANDLE)-1, &Handle, 0x402, 0, 0)))
+            hProcess = Handle;
+        
+        PROCESS_BASIC_INFORMATION pbi = { 0 };
+        ntstatus = NtQueryInformationProcess(hProcess, ProcessBasicInformation, &pbi, sizeof(PROCESS_BASIC_INFORMATION), NULL);
+        if (NT_SUCCESS(ntstatus))
+        {
+            if (pbi.UniqueProcessId != ((CLIENT_ID *)(PTR32)NtCurrentTeb() + TEB_ClientId_OFFSET32)->UniqueProcess)
+            {
+                SECTION_IMAGE_INFORMATION sii = { 0 };
+                IsCurrentProcess = FALSE;
+                ntstatus = NtQueryInformationProcess(hProcess, ProcessImageInformation, &sii, sizeof(SECTION_IMAGE_INFORMATION), NULL);
+                if (NT_SUCCESS(ntstatus) && sii.SubSystemType - 2 > 1)
+                    ntstatus = STATUS_UNSUCCESSFUL;
+            }
+        }
+        if (!NT_SUCCESS(ntstatus))
+        {
+            if (Handle)
+                NtClose(Handle);
+            kernelbase_BaseSetLastNTError(ntstatus);
+            return ThreadHandle;
+        }
+    }
+
+    if (IsCurrentProcess)
+    {
+        PTR64 *temp = malloc(0x10);
+        temp[0] = lpStartAddress;
+        temp[1] = lpParameter;
+
+        lpStartAddress = BaseThreadInitThunk;
+        lpParameter = temp;
+    }
+    
+    HANDLE64 ActivationContextInformation;
+    if (IsCurrentProcess)
+        ntstatus = NtX64Call(RtlQueryInformationActivationContext, 7, (DWORD64)1, NULL64, NULL64, (DWORD64)1, (PTR64)&ActivationContextInformation, (DWORD64)0x10, NULL64); // RtlQueryInformationActivationContext(1, NULL, NULL, 1, &ActivationContextInformation, sizeof(ActivationContextInformation), NULL);
+
+    PTR64 Stack = NULL64;
+    BOOLEAN ActivationFlag = FALSE;
+    if (NT_SUCCESS(ntstatus))
+    {
+        ULONG Flag = FALSE;
+        ULONG CreateFlags = (dwCreationFlags & CREATE_SUSPENDED) != 0;
+
+        if (IsCurrentProcess && kernelbase_byte_101C55A4 || *(PVOID*)((PTR32)NtCurrentTeb() + TEB_SubProcessTag_OFFSET32) || ActivationContextInformation && TRUE)
+            Flag = CreateFlags = 1;
+        
+        BOOLEAN IsSetStackSizeParamIsAReservation = (dwCreationFlags & STACK_SIZE_PARAM_IS_A_RESERVATION) != 0;
+        SIZE_T64 SizeOfStackCommit = IsSetStackSizeParamIsAReservation ? dwStackSize : 0;
+        ntstatus = NtX64Call(NtCreateThreadEx, 11, (PTR64)&ThreadHandle, (DWORD64)0x1FFFFF, (PTR64)ObjectAttributes, (HANDLE64)hProcess, (PTR64)lpStartAddress, (PTR64)lpParameter, (DWORD64)CreateFlags, (DWORD64)0, SizeOfStackCommit, dwStackSize & -(SIZE_T64)IsSetStackSizeParamIsAReservation, (PTR64)&AttributeList);
+        if (NT_SUCCESS(ntstatus))
+        {
+            if (!(*(PVOID*)((PTR32)NtCurrentTeb() + TEB_SubProcessTag_OFFSET32) || ActivationContextInformation && TRUE))
+            {
+                if (IsCurrentProcess && *(PVOID*)((PTR32)NtCurrentTeb() + TEB_SubProcessTag_OFFSET32))
+                    *(PTR64 *)(Teb + TEB_SubProcessTag_OFFSET64) = *(PVOID*)((PTR32)NtCurrentTeb() + TEB_SubProcessTag_OFFSET32);
+
+                ntstatus = NtX64Call(RtlAllocateActivationContextStack, 1, (PTR64)&Stack);
+                if (NT_SUCCESS(ntstatus))
+                {
+                    *(PTR64 *)(Teb + TEB_ActivationContextStackPointer_OFFSET64) = Stack;
+
+                    DWORD Cookie;
+                    ntstatus = NtX64Call(RtlActivateActivationContextEx, 4, (DWORD64)1, Teb, ActivationContextInformation, (PTR64)&Cookie);
+
+                    ActivationFlag = TRUE;
+                }
+            }
+        }
+
+        if (NT_SUCCESS(ntstatus))
+        {
+            if (lpThreadId)
+                *lpThreadId = ClientId.UniqueThread;
+            if (Flag && (dwCreationFlags & CREATE_SUSPENDED) == 0)
+                ResumeThread((HANDLE)ThreadHandle);
+        }
+    }
+
+    if (ActivationContextInformation)
+        NtX64Call(RtlReleaseActivationContext, 1, ActivationContextInformation);
+
+    if (Handle)
+        NtClose(Handle);
+
+    if (!NT_SUCCESS(ntstatus))
+    {
+        if (ActivationFlag && ActivationContextInformation)
+            NtX64Call(RtlFreeActivationContextStack, 1, ActivationContextInformation);
+        if (Stack)
+            NtX64Call(RtlFreeActivationContextStack, 1, Stack);
+        if (ThreadHandle)
+        {
+            NtTerminateThread((HANDLE)ThreadHandle, ntstatus);
+            NtClose((HANDLE)ThreadHandle);
+        }
+        kernelbase_BaseSetLastNTError(ntstatus);
+        ThreadHandle = NULL64;
+    }
+
+    return (HANDLE)ThreadHandle;
+}
+
+DECLARE_EXPORT HANDLE CreateRemoteThread64(HANDLE hProcess, LPSECURITY_ATTRIBUTES lpThreadAttributes, SIZE_T64 dwStackSize, LPTHREAD_START_ROUTINE64 lpStartAddress, PTR64 lpParameter, DWORD dwCreationFlags, LPDWORD lpThreadId)
+{
+    return CreateRemoteThreadEx64(hProcess, lpThreadAttributes, dwStackSize, lpStartAddress, lpParameter, dwCreationFlags & 0x10004, NULL, lpThreadId);
+}
+
+DECLARE_EXPORT HANDLE CreateThread64(LPSECURITY_ATTRIBUTES lpThreadAttributes, SIZE_T64 dwStackSize, LPTHREAD_START_ROUTINE64 lpStartAddress, PTR64 lpParameter, DWORD dwCreationFlags, LPDWORD lpThreadId)
+{
+    return CreateRemoteThreadEx64((HANDLE)-1, lpThreadAttributes, dwStackSize, lpStartAddress, lpParameter, dwCreationFlags & 0x10004, NULL, lpThreadId);
 }
 
 BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved)
