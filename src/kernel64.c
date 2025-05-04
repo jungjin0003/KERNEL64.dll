@@ -253,6 +253,174 @@ DECLARE_EXPORT DECLARE_NAKED NTSTATUS WOW64API NtX64Call(POINTER64(LPVOID) lpPro
     __asm { jmp X64Call }
 }
 
+DECLARE_NAKED NTSTATUS NTAPI CloneNtMapViewOfSection(HANDLE64 SectionHandle, HANDLE64 ProcessHandle, POINTER64(PVOID *) BaseAddress, ULONG64 ZeroBits, SIZE_T64 CommitSize, POINTER64(LARGE_INTEGER *) SectionOffset, POINTER64(SIZE_T *) ViewSize, SECTION_INHERIT InheritDisposition, ULONG AllocationType, ULONG Win32Protect)
+{
+    __asm
+    {
+        EMIT(0x4C) EMIT(0x8B) EMIT(0xD1)                        // mov r10, rcx
+        EMIT(0xB8) EMIT(0x28) EMIT(0x00) EMIT(0x00) EMIT(0x00)  // mov eax, 28h
+        EMIT(0x0F) EMIT(0x05)                                   // syscall
+        EMIT(0xC3)                                              // ret
+    }
+}
+
+DECLARE_EXPORT DECLARE_NAKED NTSTATUS NTAPI HookNtMapViewOfSection(HANDLE64 SectionHandle, HANDLE64 ProcessHandle, POINTER64(PVOID *) BaseAddress, ULONG64 ZeroBits, SIZE_T64 CommitSize, POINTER64(LARGE_INTEGER *) SectionOffset, POINTER64(SIZE_T *) ViewSize, SECTION_INHERIT InheritDisposition, ULONG AllocationType, ULONG Win32Protect)
+{
+    static FARPROC64 NtQuerySection;
+    static FARPROC64 NtMapViewOfSectionEx;
+    static char StrNtQuerySection[] = "NtQuerySection";
+    static char StrNtMapViewOfSectionEx[] = "NtMapViewOfSectionEx";
+
+    __asm
+    {
+        EMIT(0x48) EMIT(0x89) EMIT(0x4C) EMIT(0x24) EMIT(0x08) // mov qword ptr [rsp+0x08], rcx
+        EMIT(0x48) EMIT(0x89) EMIT(0x54) EMIT(0x24) EMIT(0x10) // mov qword ptr [rsp+0x10], rdx
+        EMIT(0x4C) EMIT(0x89) EMIT(0x44) EMIT(0x24) EMIT(0x18) // mov qword ptr [rsp+0x18], r8
+        EMIT(0x4C) EMIT(0x89) EMIT(0x4C) EMIT(0x24) EMIT(0x20) // mov qword ptr [rsp+0x20], r9
+        SwitchX86();
+        push ebp
+        mov ebp, esp
+        pushad // Register backup
+        /*
+        if (NtQuerySection == NULL64)
+            NtQuerySection = GetProcAddress64(Ntdll64, "NtQuerySection");
+        */
+        mov eax, dword ptr [NtQuerySection]
+        or eax, dword ptr [NtQuerySection+0x04]
+        jne $+39
+        push offset StrNtQuerySection
+        push [Ntdll64+0x04]
+        push [Ntdll64]
+        call GetProcAddress64
+        mov dword ptr [NtQuerySection], eax
+        mov dword ptr [NtQuerySection+0x04], edx
+        /*
+        if (NtMapViewOfSectionEx == NULL64)
+            NtMapViewOfSectionEx = GetProcAddress64(Ntdll64, "NtMapViewOfSectionEx");
+        */
+        mov eax, dword ptr [NtMapViewOfSectionEx]
+        or eax, dword ptr [NtMapViewOfSectionEx+0x04]
+        jne $+39
+        push offset StrNtMapViewOfSectionEx
+        push [Ntdll64+0x04]
+        push [Ntdll64]
+        call GetProcAddress64
+        mov dword ptr [NtMapViewOfSectionEx], eax
+        mov dword ptr [NtMapViewOfSectionEx+0x04], edx
+        /*
+        SECTION_IMAGE_INFORMATION sii = { 0 };
+        */
+        sub esp, 0x40
+        lea edi, [esp]
+        mov ecx, 0x40
+        xor eax, eax
+        rep stosb
+        /*
+        if (NtX64Call(NtQuerySection, 5, SectionHandle, SectionImageInformation, &esp, sizeof(SECTION_IMAGE_INFORMATION), NULL64) == STATUS_SUCCESS && sii.Machine == IMAGE_FILE_MACHINE_AMD64)
+        */
+        push 0
+        push 0
+        push 0
+        push 0x40
+        lea eax, [esp+0x10]
+        push 0
+        push eax
+        push 0
+        push 1 // SectionImageInformation
+        mov eax, dword ptr [ebp+0x0C]
+        mov edx, dword ptr [ebp+0x10]
+        push edx
+        push eax
+        push 5
+        push [NtQuerySection+0x04]
+        push [NtQuerySection]
+        call NtX64Call
+        add esp, 0x34
+        test eax, eax
+        jne $+159
+        /*
+            sii.Machine == IMAGE_FILE_MACHINE_AMD64
+        */
+        lea eax, [esp]
+        mov ax, word ptr [eax+0x30]
+        cmp ax, 0x8664
+        jne $+142
+        /*
+            MEM_EXTENDED_PARAMETER MemExtendedParameter = { 0 };
+            MemExtendedParameters.Type = 1;
+            MemExtendedParameters.Pointer = &MemAddressRequirements;
+        */
+        lea edi, [esp+0x04]
+        mov ecx, 0x10
+        xor eax, eax
+        rep stosb
+        mov byte ptr [esp+0x04], 0x01
+        lea eax, dword ptr [esp+0x14]
+        mov dword ptr [esp+0x0C], eax
+        /*
+            MEM_ADDRESS_REQUIREMENTS MemAddressRequirements = { 0 };
+            MemAddressRequirements.LowestStartingAddress = NULL64;
+            MemAddressRequirements.HighestEndingAddress = 0x00007ffffffeffff;
+            MemAddressRequirements.Alignment = 0;
+        */
+        lea edi, [esp+0x14]
+        mov ecx, 0x20
+        xor eax, eax
+        rep stosb
+        mov dword ptr [esp+0x1C], 0xfffeffff
+        mov dword ptr [esp+0x20], 0x00007fff
+        /*
+            NtX64Call(NtMapViewOfSectionEx, 9, SectionHandle, ProcessHandle, BaseAddress, NULL64, ViewSize, AllocationType, Win32Protect, &MemExtendedParameter, 1)
+        */
+        push 0
+        push 1
+        push 0
+        lea eax, [esp+0x10]
+        push eax
+        push dword ptr [ebp+0x0C+0x4C] // Win32Protect
+        push dword ptr [ebp+0x0C+0x48]
+        push dword ptr [ebp+0x0C+0x44] // AllocationType
+        push dword ptr [ebp+0x0C+0x40]
+        push dword ptr [ebp+0x0C+0x34] // ViewSize
+        push dword ptr [ebp+0x0C+0x30]
+        push 0
+        push 0
+        push dword ptr [ebp+0x0C+0x14] // BaseAddress
+        push dword ptr [ebp+0x0C+0x10]
+        push dword ptr [ebp+0x0C+0x0C] // ProcessHandle
+        push dword ptr [ebp+0x0C+0x08]
+        push dword ptr [ebp+0x0C+0x04] // SectionHandle
+        push dword ptr [ebp+0x0C]
+        push 9
+        push [NtMapViewOfSectionEx+0x04]
+        push [NtMapViewOfSectionEx]
+        call NtX64Call
+        add esp, 0x54
+        mov dword ptr [ebp-0x04], eax
+        jmp $+43
+        /*
+        else
+            NtX64Call(CloneNtMapViewOfSection, 10, SectionHandle, ProcessHandle, BaseAddress, ZeroBits, CommitSize, SectionOffset, ViewSize, InheritDisposition, AllocationType, Win32Protect);
+        */
+        mov ecx, 0x15
+        dec ecx
+        push dword ptr [ebp+0x0C+ecx*4]
+        test ecx, ecx
+        jne $-7
+        push 0x0A
+        push 0
+        push CloneNtMapViewOfSection
+        call NtX64Call
+        add esp, 0x60
+        mov dword ptr [ebp-0x04], eax
+        add esp, 0x40
+        popad
+        leave
+        SwitchX64();
+        ret
+    }
+}
+
 DECLARE_NAKED VOID WOW64API BaseThreadInitThunk(LPVOID lpParameter)
 {
     /*
@@ -1131,7 +1299,18 @@ BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved)
         hSelf = OpenProcess(PROCESS_ALL_ACCESS, FALSE, GetCurrentProcessId());
         Ntdll64 = GetModuleHandleA64("ntdll.dll");
 
-        if (hSelf == NULL)
+        if (hSelf == NULL || Ntdll64 == NULL64)
+            return FALSE;
+        
+        PTR64 pNtMapViewOfSection = GetProcAddress64(Ntdll64, "NtMapViewOfSection");
+        BYTE Instruction[12] = { 0x48, 0xB8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xE0 };
+        *(PTR64 *)(Instruction + 2) = (PTR64)HookNtMapViewOfSection;
+        DWORD flOldProtect = 0;
+        
+        if (VirtualProtect64(pNtMapViewOfSection, sizeof(Instruction), PAGE_EXECUTE_READWRITE, &flOldProtect) == FALSE)
+            return FALSE;
+        
+        if (WriteMemory64(pNtMapViewOfSection, Instruction, sizeof(Instruction), NULL) == FALSE)
             return FALSE;
         break;
     case DLL_PROCESS_DETACH:
