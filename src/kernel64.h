@@ -10,6 +10,7 @@
 #define DECLARE_EXPORT  __declspec(dllexport)
 #define DECLARE_NAKED   __declspec(naked)
 #define NULL64          ((PTR64)0)
+#define POINTER64(x)    PTR64
 
 typedef DWORD32 PTR32;
 typedef DWORD64 PTR64;
@@ -377,24 +378,24 @@ typedef struct _PEB64
 NTSYSCALLAPI NTSTATUS NTAPI NtDuplicateObject(HANDLE SourceProccessHandle, HANDLE SourceHandle, HANDLE TargetProcessHandle, PHANDLE TargetHandle, ACCESS_MASK DesiredAccess, ULONG HandleAttributes, ULONG Options);
 NTSYSCALLAPI NTSTATUS NTAPI NtTerminateThread(HANDLE ThreadHandle, NTSTATUS ExitStatus);
 
-DECLARE_EXPORT PTR64 WOW64API X64Call(PTR64 lpProcAddress, DWORD NumberOfParameter, ...);
-DECLARE_EXPORT NTSTATUS WOW64API NtX64Call(PTR64 lpProcAddress, DWORD NumberOfParameter, ...);
-DECLARE_EXPORT PTR64 WOW64API VirtualAllocEx64(HANDLE hProcess, PTR64 lpAddress, SIZE_T64 dwSize, DWORD flAllocationType, DWORD flProtect);
-DECLARE_EXPORT PTR64 WOW64API VirtualAlloc64(PTR64 lpAddress, SIZE_T64 dwSize, DWORD flAllocationType, DWORD flProtect);
-DECLARE_EXPORT BOOL WOW64API VirtualProtectEx64(HANDLE hProcess, PTR64 lpAddress, SIZE_T64 dwSize, DWORD flNewProtect, PDWORD lpflOldProtect);
-DECLARE_EXPORT BOOL WOW64API VirtualProtect64(PTR64 lpAddress, SIZE_T64 dwSize, DWORD flNewProtect, PDWORD lpflOldProtect);
-DECLARE_EXPORT SIZE_T64 WOW64API VirtualQueryEx64(HANDLE hProcess, PTR64 lpAddress, PMEMORY_BASIC_INFORMATION64 lpBuffer, SIZE_T64 dwLength);
-DECLARE_EXPORT SIZE_T64 WOW64API VirtualQuery64(PTR64 lpAddress, PMEMORY_BASIC_INFORMATION64 lpBuffer, SIZE_T64 dwLength);
-DECLARE_EXPORT BOOL WOW64API ReadProcessMemory64(HANDLE hProcess, PTR64 lpBaseAddress, LPVOID lpBuffer, SIZE_T64 nSize, SIZE_T64 *lpNumberOfBytesRead);
-DECLARE_EXPORT BOOL WOW64API WriteProcessMemory64(HANDLE hProcess, PTR64 lpBaseAddress, LPVOID lpBuffer, SIZE_T64 nSize, SIZE_T64 *lpNumberOfBytesWritten);
+DECLARE_EXPORT POINTER64(ULONG_PTR) WOW64API X64Call(POINTER64(LPVOID) lpProcAddress, DWORD NumberOfParameter, ...);
+DECLARE_EXPORT NTSTATUS WOW64API NtX64Call(POINTER64(LPVOID) lpProcAddress, DWORD NumberOfParameter, ...);
+DECLARE_EXPORT POINTER64(LPVOID) WOW64API VirtualAllocEx64(HANDLE hProcess, POINTER64(LPVOID) lpAddress, SIZE_T64 dwSize, DWORD flAllocationType, DWORD flProtect);
+DECLARE_EXPORT POINTER64(LPVOID) WOW64API VirtualAlloc64(POINTER64(LPVOID) lpAddress, SIZE_T64 dwSize, DWORD flAllocationType, DWORD flProtect);
+DECLARE_EXPORT BOOL WOW64API VirtualProtectEx64(HANDLE hProcess, POINTER64(LPVOID) lpAddress, SIZE_T64 dwSize, DWORD flNewProtect, PDWORD lpflOldProtect);
+DECLARE_EXPORT BOOL WOW64API VirtualProtect64(POINTER64(LPVOID) lpAddress, SIZE_T64 dwSize, DWORD flNewProtect, PDWORD lpflOldProtect);
+DECLARE_EXPORT SIZE_T64 WOW64API VirtualQueryEx64(HANDLE hProcess, POINTER64(LPCVOID) lpAddress, PMEMORY_BASIC_INFORMATION64 lpBuffer, SIZE_T64 dwLength);
+DECLARE_EXPORT SIZE_T64 WOW64API VirtualQuery64(POINTER64(LPCVOID) lpAddress, PMEMORY_BASIC_INFORMATION64 lpBuffer, SIZE_T64 dwLength);
+DECLARE_EXPORT BOOL WOW64API ReadProcessMemory64(HANDLE hProcess, POINTER64(LPCVOID) lpBaseAddress, POINTER64(LPVOID) lpBuffer, SIZE_T64 nSize, SIZE_T64 *lpNumberOfBytesRead);
+DECLARE_EXPORT BOOL WOW64API WriteProcessMemory64(HANDLE hProcess, POINTER64(LPVOID) lpBaseAddress, POINTER64(LPCVOID) lpBuffer, SIZE_T64 nSize, SIZE_T64 *lpNumberOfBytesWritten);
 DECLARE_EXPORT HMODULE64 WOW64API GetModuleHandleW64(LPCWSTR lpModuleName);
 DECLARE_EXPORT HMODULE64 WOW64API GetModuleHandleA64(LPCSTR lpModuleName);
 DECLARE_EXPORT HMODULE64 WOW64API LoadLibraryW64(LPCWSTR lpLibFileName);
 DECLARE_EXPORT HMODULE64 WOW64API LoadLibraryA64(LPCSTR lpLibFileName);
 DECLARE_EXPORT BOOL WOW64API FreeLibrary64(HMODULE64 hLibModule);
 DECLARE_EXPORT FARPROC64 WOW64API GetProcAddress64(HMODULE64 hModule64, LPCSTR lpProcName);
-DECLARE_EXPORT HANDLE CreateRemoteThreadEx64(HANDLE hProcess, LPSECURITY_ATTRIBUTES lpThreadAttributes, SIZE_T dwStackSize, LPTHREAD_START_ROUTINE64 lpStartAddress, PTR64 lpParameter, DWORD dwCreationFlags, LPPROC_THREAD_ATTRIBUTE_LIST lpAttributeList, LPDWORD lpThreadId);
-DECLARE_EXPORT HANDLE CreateRemoteThread64(HANDLE hProcess, LPSECURITY_ATTRIBUTES lpThreadAttributes, SIZE_T64 dwStackSize, LPTHREAD_START_ROUTINE64 lpStartAddress, PTR64 lpParameter, DWORD dwCreationFlags, LPDWORD lpThreadId);
-DECLARE_EXPORT HANDLE CreateThread64(LPSECURITY_ATTRIBUTES lpThreadAttributes, SIZE_T64 dwStackSize, LPTHREAD_START_ROUTINE64 lpStartAddress, PTR64 lpParameter, DWORD dwCreationFlags, LPDWORD lpThreadId);
+DECLARE_EXPORT HANDLE CreateRemoteThreadEx64(HANDLE hProcess, LPSECURITY_ATTRIBUTES lpThreadAttributes, SIZE_T64 dwStackSize, LPTHREAD_START_ROUTINE64 lpStartAddress, POINTER64(LPVOID) lpParameter, DWORD dwCreationFlags, LPPROC_THREAD_ATTRIBUTE_LIST lpAttributeList, LPDWORD lpThreadId);
+DECLARE_EXPORT HANDLE CreateRemoteThread64(HANDLE hProcess, LPSECURITY_ATTRIBUTES lpThreadAttributes, SIZE_T64 dwStackSize, LPTHREAD_START_ROUTINE64 lpStartAddress, POINTER64(LPVOID) lpParameter, DWORD dwCreationFlags, LPDWORD lpThreadId);
+DECLARE_EXPORT HANDLE CreateThread64(LPSECURITY_ATTRIBUTES lpThreadAttributes, SIZE_T64 dwStackSize, LPTHREAD_START_ROUTINE64 lpStartAddress, POINTER64(LPVOID) lpParameter, DWORD dwCreationFlags, LPDWORD lpThreadId);
 
 #endif

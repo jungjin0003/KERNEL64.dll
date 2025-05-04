@@ -202,7 +202,7 @@ void __write64qword(unsigned long long address, unsigned long long data)
     SwitchX86();
 }
 
-DECLARE_EXPORT DECLARE_NAKED PTR64 WOW64API X64Call(PTR64 lpProcAddress, DWORD NumberOfParameter, ...)
+DECLARE_EXPORT DECLARE_NAKED POINTER64(ULONG_PTR) WOW64API X64Call(POINTER64(LPVOID) lpProcAddress, DWORD NumberOfParameter, ...)
 {
     __asm 
     {
@@ -248,7 +248,7 @@ DECLARE_EXPORT DECLARE_NAKED PTR64 WOW64API X64Call(PTR64 lpProcAddress, DWORD N
     }
 }
 
-DECLARE_EXPORT DECLARE_NAKED NTSTATUS WOW64API NtX64Call(PTR64 lpProcAddress, DWORD NumberOfParameter, ...)
+DECLARE_EXPORT DECLARE_NAKED NTSTATUS WOW64API NtX64Call(POINTER64(LPVOID) lpProcAddress, DWORD NumberOfParameter, ...)
 {
     __asm { jmp X64Call }
 }
@@ -560,7 +560,7 @@ NTSTATUS WINAPI BasepConvertWin32AttributeList(LPPROC_THREAD_ATTRIBUTE_LIST lpAt
     return STATUS_SUCCESS;
 }
 
-DECLARE_EXPORT PTR64 WOW64API VirtualAllocEx64(HANDLE hProcess, PTR64 lpAddress, SIZE_T64 dwSize, DWORD flAllocationType, DWORD flProtect)
+DECLARE_EXPORT POINTER64(LPVOID) WOW64API VirtualAllocEx64(HANDLE hProcess, POINTER64(LPVOID) lpAddress, SIZE_T64 dwSize, DWORD flAllocationType, DWORD flProtect)
 {
     static FARPROC64 NtAllocateVirtualMemoryEx;
     if (NtAllocateVirtualMemoryEx == NULL64)
@@ -594,12 +594,12 @@ DECLARE_EXPORT PTR64 WOW64API VirtualAllocEx64(HANDLE hProcess, PTR64 lpAddress,
     return BaseAddress;
 }
 
-DECLARE_EXPORT PTR64 WOW64API VirtualAlloc64(PTR64 lpAddress, SIZE_T64 dwSize, DWORD flAllocationType, DWORD flProtect)
+DECLARE_EXPORT POINTER64(LPVOID) WOW64API VirtualAlloc64(POINTER64(LPVOID) lpAddress, SIZE_T64 dwSize, DWORD flAllocationType, DWORD flProtect)
 {
     return VirtualAllocEx64(hSelf, lpAddress, dwSize, flAllocationType, flProtect);
 }
 
-DECLARE_EXPORT BOOL WOW64API VirtualProtectEx64(HANDLE hProcess, PTR64 lpAddress, SIZE_T64 dwSize, DWORD flNewProtect, PDWORD lpflOldProtect)
+DECLARE_EXPORT BOOL WOW64API VirtualProtectEx64(HANDLE hProcess, POINTER64(LPVOID) lpAddress, SIZE_T64 dwSize, DWORD flNewProtect, PDWORD lpflOldProtect)
 {
     static FARPROC64 NtProtectVirtualMemory;
     static FARPROC64 RtlFlushSecureMemoryCache;
@@ -620,12 +620,12 @@ DECLARE_EXPORT BOOL WOW64API VirtualProtectEx64(HANDLE hProcess, PTR64 lpAddress
     return NT_SUCCESS(ntstatus);
 }
 
-DECLARE_EXPORT BOOL WOW64API VirtualProtect64(PTR64 lpAddress, SIZE_T64 dwSize, DWORD flNewProtect, PDWORD lpflOldProtect)
+DECLARE_EXPORT BOOL WOW64API VirtualProtect64(POINTER64(LPVOID) lpAddress, SIZE_T64 dwSize, DWORD flNewProtect, PDWORD lpflOldProtect)
 {
     return VirtualProtectEx64((HANDLE)-1, lpAddress, dwSize, flNewProtect, lpflOldProtect);
 }
 
-DECLARE_EXPORT SIZE_T64 WOW64API VirtualQueryEx64(HANDLE hProcess, PTR64 lpAddress, PMEMORY_BASIC_INFORMATION64 lpBuffer, SIZE_T64 dwLength)
+DECLARE_EXPORT SIZE_T64 WOW64API VirtualQueryEx64(HANDLE hProcess, POINTER64(LPCVOID) lpAddress, PMEMORY_BASIC_INFORMATION64 lpBuffer, SIZE_T64 dwLength)
 {
     static FARPROC64 NtQueryVirtualMemory;
     if (NtQueryVirtualMemory == NULL64)
@@ -639,12 +639,12 @@ DECLARE_EXPORT SIZE_T64 WOW64API VirtualQueryEx64(HANDLE hProcess, PTR64 lpAddre
     return ReturnLength;
 }
 
-DECLARE_EXPORT SIZE_T64 WOW64API VirtualQuery64(PTR64 lpAddress, PMEMORY_BASIC_INFORMATION64 lpBuffer, SIZE_T64 dwLength)
+DECLARE_EXPORT SIZE_T64 WOW64API VirtualQuery64(POINTER64(LPCVOID) lpAddress, PMEMORY_BASIC_INFORMATION64 lpBuffer, SIZE_T64 dwLength)
 {
     return VirtualQueryEx64((HANDLE)-1, lpAddress, lpBuffer, dwLength);
 }
 
-DECLARE_EXPORT BOOL WOW64API ReadProcessMemory64(HANDLE hProcess, PTR64 lpBaseAddress, LPVOID lpBuffer, SIZE_T64 nSize, SIZE_T64 *lpNumberOfBytesRead)
+DECLARE_EXPORT BOOL WOW64API ReadProcessMemory64(HANDLE hProcess, POINTER64(LPCVOID) lpBaseAddress, LPVOID lpBuffer, SIZE_T64 nSize, SIZE_T64 *lpNumberOfBytesRead)
 {
     static FARPROC64 NtReadVirtualMemory;
     if (NtReadVirtualMemory == NULL64)
@@ -663,7 +663,7 @@ DECLARE_EXPORT BOOL WOW64API ReadProcessMemory64(HANDLE hProcess, PTR64 lpBaseAd
     return NT_SUCCESS(ntstatus);
 }
 
-DECLARE_EXPORT BOOL WOW64API WriteProcessMemory64(HANDLE hProcess, PTR64 lpBaseAddress, LPVOID lpBuffer, SIZE_T64 nSize, SIZE_T64 *lpNumberOfBytesWritten)
+DECLARE_EXPORT BOOL WOW64API WriteProcessMemory64(HANDLE hProcess, POINTER64(LPVOID) lpBaseAddress, LPVOID lpBuffer, SIZE_T64 nSize, SIZE_T64 *lpNumberOfBytesWritten)
 {
     static FARPROC64 NtWriteVirtualMemory;
     if (NtWriteVirtualMemory == NULL64)
@@ -926,7 +926,7 @@ DECLARE_EXPORT BOOL WOW64API FreeLibrary64(HMODULE64 hLibModule)
     return NT_SUCCESS(ntstatus);
 }
 
-DECLARE_EXPORT HANDLE CreateRemoteThreadEx64(HANDLE hProcess, LPSECURITY_ATTRIBUTES lpThreadAttributes, SIZE_T dwStackSize, LPTHREAD_START_ROUTINE64 lpStartAddress, PTR64 lpParameter, DWORD dwCreationFlags, LPPROC_THREAD_ATTRIBUTE_LIST lpAttributeList, LPDWORD lpThreadId)
+DECLARE_EXPORT HANDLE CreateRemoteThreadEx64(HANDLE hProcess, LPSECURITY_ATTRIBUTES lpThreadAttributes, SIZE_T dwStackSize, LPTHREAD_START_ROUTINE64 lpStartAddress, POINTER64(LPVOID) lpParameter, DWORD dwCreationFlags, LPPROC_THREAD_ATTRIBUTE_LIST lpAttributeList, LPDWORD lpThreadId)
 {
     static NTSTATUS (WINAPI *BaseFormatObjectAttributes)(POBJECT_ATTRIBUTES ObjectAttributes, LPSECURITY_ATTRIBUTES SecurityAttributes, PUNICODE_STRING UnicodeString, POBJECT_ATTRIBUTES *ObjectAttributesOut);
     static FARPROC64 NtCreateThreadEx;
@@ -1112,12 +1112,12 @@ DECLARE_EXPORT HANDLE CreateRemoteThreadEx64(HANDLE hProcess, LPSECURITY_ATTRIBU
     return (HANDLE)ThreadHandle;
 }
 
-DECLARE_EXPORT HANDLE CreateRemoteThread64(HANDLE hProcess, LPSECURITY_ATTRIBUTES lpThreadAttributes, SIZE_T64 dwStackSize, LPTHREAD_START_ROUTINE64 lpStartAddress, PTR64 lpParameter, DWORD dwCreationFlags, LPDWORD lpThreadId)
+DECLARE_EXPORT HANDLE CreateRemoteThread64(HANDLE hProcess, LPSECURITY_ATTRIBUTES lpThreadAttributes, SIZE_T64 dwStackSize, LPTHREAD_START_ROUTINE64 lpStartAddress, POINTER64(LPVOID) lpParameter, DWORD dwCreationFlags, LPDWORD lpThreadId)
 {
     return CreateRemoteThreadEx64(hProcess, lpThreadAttributes, dwStackSize, lpStartAddress, lpParameter, dwCreationFlags & 0x10004, NULL, lpThreadId);
 }
 
-DECLARE_EXPORT HANDLE CreateThread64(LPSECURITY_ATTRIBUTES lpThreadAttributes, SIZE_T64 dwStackSize, LPTHREAD_START_ROUTINE64 lpStartAddress, PTR64 lpParameter, DWORD dwCreationFlags, LPDWORD lpThreadId)
+DECLARE_EXPORT HANDLE CreateThread64(LPSECURITY_ATTRIBUTES lpThreadAttributes, SIZE_T64 dwStackSize, LPTHREAD_START_ROUTINE64 lpStartAddress, POINTER64(LPVOID) lpParameter, DWORD dwCreationFlags, LPDWORD lpThreadId)
 {
     return CreateRemoteThreadEx64((HANDLE)-1, lpThreadAttributes, dwStackSize, lpStartAddress, lpParameter, dwCreationFlags & 0x10004, NULL, lpThreadId);
 }
